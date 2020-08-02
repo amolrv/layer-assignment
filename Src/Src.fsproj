@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="./Domain/Article.fs" />
+    <Compile Include="./Infra/Types.fs" />
+    <Compile Include="./Infra/EventStore.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+</Project>
