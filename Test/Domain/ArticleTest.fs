@@ -28,7 +28,9 @@ module DraftArticle =
   let ``should draft from drafted event`` () =
     Given []
     |> When(Draft article)
-    |> Then should equal [ Drafted article ]
+    |> Then should equal
+         [ Drafted article
+           StateChanged InDraft ]
 
   [<Fact>]
   let ``should emit already drafted event when article is drafted already`` () =
@@ -80,12 +82,15 @@ module Reviewer =
   let ``should assign reviewer to article`` () =
     Given [ Drafted article ]
     |> When(AssignReviewer copywriter1)
-    |> Then should equal [ Assigned copywriter1 ]
+    |> Then should equal
+         [ Assigned copywriter1
+           StateChanged InReview ]
 
   [<Fact>]
   let ``should not re assign another reviewer`` () =
     Given
       [ Drafted article
-        Assigned copywriter1 ]
+        Assigned copywriter1
+        StateChanged InReview ]
     |> When(AssignReviewer copywriter2)
     |> Then should equal [ AlreadyAssigned copywriter1 ]

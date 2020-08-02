@@ -40,6 +40,7 @@ type Command =
 type Event =
   | ArticleWasNotPresent
   | Drafted of ArticleDraft
+  | StateChanged of ArticleState
   | AlreadyDrafted
   | ContentUpdated of string * string
   | TriedToChangeContentsOfOthersArticle of ArticleDraft
@@ -62,9 +63,9 @@ let apply (article : Article option) event =
       |> Some
   | (Assigned reviewer, Some article) ->
       { article with
-          Reviewer = Some reviewer
-          State = InReview }
+          Reviewer = Some reviewer }
       |> Some
+  | (StateChanged state, Some article) -> { article with State = state } |> Some
   | _ -> article
 
 let private changeContent (draft : ArticleDraft) article =
@@ -78,12 +79,14 @@ let private changeContent (draft : ArticleDraft) article =
 
 let private assignReviewer reviewer article =
   match article.State with
-  | InDraft -> [ Assigned reviewer ]
+  | InDraft -> [ Assigned reviewer; StateChanged InReview ]
   | _ -> [ article.Reviewer |> Option.get |> AlreadyAssigned ]
 
 let exec cmd article =
   match (cmd, article) with
-  | (Draft articleDraft, None) -> [ Drafted articleDraft ]
+  | (Draft articleDraft, None) ->
+      [ Drafted articleDraft
+        StateChanged InDraft ]
   | (Draft _, Some _) -> [ AlreadyDrafted ]
   | (ChangeContent draft, Some state) -> state |> changeContent draft
   | (AssignReviewer reviewer, Some state) -> state |> assignReviewer reviewer
