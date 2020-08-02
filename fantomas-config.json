@@ -1,0 +1,22 @@
+﻿{
+    "IndentSpaceNum": 2,
+    "PageWidth": 120,
+    "SemicolonAtEndOfLine": false,
+    "SpaceBeforeUnitArgumentInUppercaseInvocation": true,
+    "SpaceBeforeUnitArgumentInLowercaseInvocation": true,
+    "SpaceBeforeParenthesesInUppercaseInvocation": true,
+    "SpaceBeforeParenthesesInLowercaseInvocation": true,
+    "SpaceBeforeUnitParameterInUppercaseFunctionDefinition": true,
+    "SpaceBeforeUnitParameterInLowercaseFunctionDefinition": true,
+    "SpaceBeforeParenthesesInUppercaseFunctionDefinition": true,
+    "SpaceBeforeParenthesesInLowercaseFunctionDefinition": true,
+    "SpaceBeforeClassConstructor": false,
+    "SpaceBeforeColon": true,
+    "SpaceAfterComma": true,
+    "SpaceBeforeSemicolon": true,
+    "SpaceAfterSemicolon": true,
+    "IndentOnTryWith": true,
+    "SpaceAroundDelimiter": true,
+    "MaxIfThenElseShortWidth": 40,
+    "StrictMode": true
+}
