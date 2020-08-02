@@ -18,5 +18,5 @@
     "IndentOnTryWith": true,
     "SpaceAroundDelimiter": true,
     "MaxIfThenElseShortWidth": 40,
-    "StrictMode": true
+    "StrictMode": false
 }
