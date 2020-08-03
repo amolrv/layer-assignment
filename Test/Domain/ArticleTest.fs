@@ -18,12 +18,15 @@ let equal expected actual =
 let article =
   { Title = "Title#1"
     Content = "Some nice content"
-    Topics = [ "corona"; "life-style"; "employment" ] }
+    Topics =
+      [ "corona"
+        "life-style"
+        "employment" ] }
 
 let change =
   { Title = "new title"
     Content = "new fancy content"
-    Topics = [ "corona"; "life-style" ] }
+    Topics = [ "corona" ; "life-style" ] }
 
 let journalist = JournalistId.NewGuid()
 let anotherJournalist = JournalistId.NewGuid()
@@ -74,10 +77,7 @@ module ChangeContent =
         Assigned copywriter1
         StateChanged Published ]
     |> When(ChangeContent(change, journalist))
-    |> Then should equal
-         (Published
-          |> ArticleInvalidState
-          |> Error)
+    |> Then should equal (Published |> ArticleInvalidState |> Error)
 
 
   [<Fact>]
@@ -115,10 +115,7 @@ module Reviewer =
         Assigned copywriter1
         StateChanged InReview ]
     |> When(AssignReviewer copywriter2)
-    |> Then should equal
-         (copywriter1
-          |> AlreadyAssigned
-          |> Error)
+    |> Then should equal (copywriter1 |> AlreadyAssigned |> Error)
 
 module Comments =
   let commentId1 = CommentId.NewGuid()
@@ -182,7 +179,7 @@ module Comments =
   [<Fact>]
   let ``should not add comment on article when article is inDraft/Published state`` () =
     let commentId = CommentId.NewGuid()
-    [ InDraft; Published ]
+    [ InDraft ; Published ]
     |> List.iter (fun state ->
          Given
            [ Drafted(article, journalist)
@@ -192,7 +189,7 @@ module Comments =
          |> Then should equal (Error(ArticleInvalidState state)))
 
 module publish =
-  
+
   [<Fact>]
   let ``should able to publish article only when all the comments are resolved`` () =
     Given
@@ -214,7 +211,7 @@ module publish =
         StateChanged InReview ]
     |> When(Publish journalist)
     |> Then should equal (Error ArticleIsNotReviewed)
-    
+
   [<Fact>]
   let ``should not publish article of someone else`` () =
     Given
@@ -227,7 +224,7 @@ module publish =
         Resolved Comments.commentId2 ]
     |> When(Publish anotherJournalist)
     |> Then should equal (Error TriedToPublishArticleOfOther)
-  
+
   [<Fact>]
   let ``should not publish article of some comments are yet to resolved`` () =
     Given
@@ -238,4 +235,4 @@ module publish =
         Commented("Comment#2", Comments.commentId2)
         Resolved Comments.commentId2 ]
     |> When(Publish journalist)
-    |> Then should equal (Error AllCommentsAreNotResolvedYet)  
+    |> Then should equal (Error AllCommentsAreNotResolvedYet)
