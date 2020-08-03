@@ -1,6 +1,6 @@
 module Infra.``Event store should``
 
-open Domain
+open Domain.Types
 open Xunit
 open FsUnit.Xunit
 open Infra

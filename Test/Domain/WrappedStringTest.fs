@@ -1,4 +1,4 @@
-module Types.WrappedString.Test
+module Domain.Types.WrappedString.Test
 
 open FsUnit.Xunit
 open Xunit

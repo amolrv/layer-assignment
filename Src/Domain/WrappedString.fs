@@ -1,4 +1,4 @@
-namespace Types
+namespace Domain.Types
 
 type IWrappedString =
   abstract Value : string

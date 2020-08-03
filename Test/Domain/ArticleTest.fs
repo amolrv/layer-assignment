@@ -1,5 +1,6 @@
-module Domain.Article
+module Domain.Article.Test
 
+open Domain.Types
 open Domain.Article
 open FsUnit.Xunit
 open Xunit
@@ -15,18 +16,21 @@ let equal expected actual =
   let str = sprintf "%A"
   Assert.Equal(str expected, str actual)
 
+let nonEmptyStr = WrappedString.nonEmptyString >> Option.get
+let nonEmptyStrList = List.map nonEmptyStr
+
 let article =
-  { Title = "Title#1"
-    Content = "Some nice content"
-    Topics =
+  { Title = nonEmptyStr "Title#1"
+    Content = nonEmptyStr "Some nice content"
+    Topics = nonEmptyStrList
       [ "corona"
         "life-style"
         "employment" ] }
 
 let change =
-  { Title = "new title"
-    Content = "new fancy content"
-    Topics = [ "corona" ; "life-style" ] }
+  { Title = nonEmptyStr "new title"
+    Content = nonEmptyStr "new fancy content"
+    Topics = nonEmptyStrList [ "corona" ; "life-style" ] }
 
 let journalist = JournalistId.NewGuid()
 let anotherJournalist = JournalistId.NewGuid()
@@ -127,8 +131,8 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview ]
-    |> When(Comment("Comment#1", commentId1, copywriter1))
-    |> Then should equal (Ok [ Commented("Comment#1", commentId1) ])
+    |> When(Comment( nonEmptyStr "Comment#1", commentId1, copywriter1))
+    |> Then should equal (Ok [ Commented( nonEmptyStr "Comment#1", commentId1) ])
 
   [<Fact>]
   let ``should resolve comment`` () =
@@ -136,9 +140,9 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented("Comment#1", commentId1)
+        Commented( nonEmptyStr "Comment#1", commentId1)
         ContentUpdated change
-        Commented("Comment#2", commentId2) ]
+        Commented(nonEmptyStr "Comment#2", commentId2) ]
     |> When(Resolve(commentId1, copywriter1))
     |> Then should equal (Ok [ Resolved commentId1 ])
 
@@ -148,7 +152,7 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented("Comment#1", commentId1)
+        Commented(nonEmptyStr "Comment#1", commentId1)
         ContentUpdated change
         Resolved commentId1 ]
     |> When(Resolve(commentId1, copywriter1))
@@ -161,8 +165,8 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented("Comment#1", commentId) ]
-    |> When(Comment("Comment#1", commentId, copywriter1))
+        Commented(nonEmptyStr "Comment#1", commentId) ]
+    |> When(Comment(nonEmptyStr "Comment#1", commentId, copywriter1))
     |> Then should equal (Ok [])
 
   [<Fact>]
@@ -172,8 +176,8 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented("Comment#1", commentId) ]
-    |> When(Comment("Comment#2", commentId, copywriter2))
+        Commented(nonEmptyStr "Comment#1", commentId) ]
+    |> When(Comment(nonEmptyStr "Comment#2", commentId, copywriter2))
     |> Then should equal (Error(CommentingOnOthersArticle copywriter2))
 
   [<Fact>]
@@ -185,7 +189,7 @@ module Comments =
            [ Drafted(article, journalist)
              Assigned copywriter1
              StateChanged state ]
-         |> When(Comment("Comment#1", commentId, copywriter1))
+         |> When(Comment(nonEmptyStr "Comment#1", commentId, copywriter1))
          |> Then should equal (Error(ArticleInvalidState state)))
 
 module publish =
@@ -196,8 +200,8 @@ module publish =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented("Comment#1", Comments.commentId1)
-        Commented("Comment#2", Comments.commentId2)
+        Commented(nonEmptyStr "Comment#1", Comments.commentId1)
+        Commented(nonEmptyStr "Comment#2", Comments.commentId2)
         Resolved Comments.commentId1
         Resolved Comments.commentId2 ]
     |> When(Publish journalist)
@@ -218,8 +222,8 @@ module publish =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented("Comment#1", Comments.commentId1)
-        Commented("Comment#2", Comments.commentId2)
+        Commented(nonEmptyStr "Comment#1", Comments.commentId1)
+        Commented(nonEmptyStr "Comment#2", Comments.commentId2)
         Resolved Comments.commentId1
         Resolved Comments.commentId2 ]
     |> When(Publish anotherJournalist)
@@ -231,8 +235,8 @@ module publish =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented("Comment#1", Comments.commentId1)
-        Commented("Comment#2", Comments.commentId2)
+        Commented(nonEmptyStr "Comment#1", Comments.commentId1)
+        Commented(nonEmptyStr "Comment#2", Comments.commentId2)
         Resolved Comments.commentId2 ]
     |> When(Publish journalist)
     |> Then should equal (Error AllCommentsAreNotResolvedYet)

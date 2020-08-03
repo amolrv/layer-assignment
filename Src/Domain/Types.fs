@@ -1,4 +1,4 @@
-namespace Domain
+namespace Domain.Types
 
 open System
 
@@ -7,8 +7,8 @@ type CopyWriterId = Guid
 type JournalistId = Guid
 
 type Comment =
-  | Comment of string
-  | Resolved of string
+  | Comment of NonEmptyString
+  | Resolved of NonEmptyString
 
 type AggregateId = Guid
 type EventProducer<'Event, 'Error> = 'Event list -> Result<'Event list, 'Error>

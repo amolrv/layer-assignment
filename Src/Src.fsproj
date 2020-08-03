@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="./Types/WrappedString.fs" />
+    <Compile Include="./Domain/WrappedString.fs" />
     <Compile Include="./Domain/Types.fs" />
     <Compile Include="./Domain/Article.fs" />
     <Compile Include="./Infra/EventStore.fs" />

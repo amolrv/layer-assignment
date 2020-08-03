@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="./Types/WrappedStringTest.fs" />
     <Compile Include="Infra/EventStoreTest.fs" />
+    <Compile Include="./Domain/WrappedStringTest.fs" />
     <Compile Include="Domain\ArticleTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 module Domain.Article
-open Types
-open Domain.Projection
+
+open Domain.Types
+open Domain.Types.Projection
 
 type ArticleState =
   | InDraft
@@ -8,9 +9,9 @@ type ArticleState =
   | Published
 
 type ArticleData =
-  { Title : string
-    Content : string
-    Topics : string list }
+  { Title : NonEmptyString
+    Content : NonEmptyString
+    Topics : NonEmptyString list }
 
 type Article =
   { Data : ArticleData
@@ -30,7 +31,7 @@ type Command =
   | Draft of ArticleData * JournalistId
   | ChangeContent of ArticleData * JournalistId
   | AssignReviewer of CopyWriterId
-  | Comment of string * CommentId * CopyWriterId
+  | Comment of NonEmptyString * CommentId * CopyWriterId
   | Resolve of CommentId * CopyWriterId
   | Publish of JournalistId
 
@@ -51,7 +52,7 @@ type Event =
   | ContentUpdated of ArticleData
   | Assigned of CopyWriterId
   | StateChanged of ArticleState
-  | Commented of string * CommentId
+  | Commented of NonEmptyString * CommentId
   | Resolved of CommentId
 
 let apply (article : Article option) event =
