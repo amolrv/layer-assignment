@@ -9,6 +9,10 @@ let When = articleEventProducer
 let Then expectation actual = actual |> expectation
 
 let empty a = Empty.Matches(a) |> should be True
+let should = id
+
+let equal expected (actual : Result<'a, 'e>) =
+  Assert.Equal<Result<'a, 'e>>(expected, actual)
 
 let article =
   { Title = "Title#1"
@@ -29,27 +33,46 @@ module DraftArticle =
     Given []
     |> When(Draft article)
     |> Then should equal
-         [ Drafted article
-           StateChanged InDraft ]
+         ([ Drafted article
+            StateChanged InDraft ]
+          |> Ok)
 
   [<Fact>]
   let ``should emit already drafted event when article is drafted already`` () =
     Given [ Drafted article ]
     |> When(Draft article)
-    |> Then should equal [ AlreadyDrafted ]
+    |> Then should equal (AlreadyDrafted |> Error)
 
 module ChangeContent =
   [<Fact>]
   let ``should return article was not present`` () =
     Given []
     |> When(ChangeContent change)
-    |> Then should equal [ ArticleWasNotPresent ]
+    |> Then should equal (ArticleWasNotPresent |> Error)
 
   [<Fact>]
   let ``should update content when article is inDraft state`` () =
     Given [ Drafted article ]
     |> When(ChangeContent change)
-    |> Then should equal [ ContentUpdated("new title", "new fancy content") ]
+    |> Then should equal (Ok [ ContentUpdated("new title", "new fancy content") ])
+
+  [<Fact>]
+  let ``should update content when article is in Review state`` () =
+    Given
+      [ Drafted article
+        Assigned copywriter1 ]
+    |> When(ChangeContent change)
+    |> Then should equal (Ok [ ContentUpdated("new title", "new fancy content") ])
+
+  [<Fact>]
+  let ``should not change content of published article`` () =
+    Given
+      [ Drafted article
+        Assigned copywriter1
+        StateChanged Published ]
+    |> When(ChangeContent change)
+    |> Then should equal (Published |> ArticleInvalidState |> Error)
+
 
   [<Fact>]
   let ``should not change content of an article from another journalist`` () =
@@ -59,7 +82,10 @@ module ChangeContent =
 
     Given [ Drafted article ]
     |> When(ChangeContent draftFromOtherJournalist)
-    |> Then should equal [ TriedToChangeContentsOfOthersArticle draftFromOtherJournalist ]
+    |> Then should equal
+         (draftFromOtherJournalist
+          |> TriedToChangeContentsOfOthersArticle
+          |> Error)
 
   [<Fact>]
   let ``should not update content when content are exactly same`` () =
@@ -67,15 +93,8 @@ module ChangeContent =
       [ Drafted article
         ContentUpdated("new title", "new fancy content") ]
     |> When(ChangeContent change)
-    |> Then be empty
+    |> Then should equal (Ok [])
 
-  [<Fact>]
-  let ``should update content when article is in Review state`` () =
-    Given
-      [ Drafted article
-        Assigned copywriter1 ]
-    |> When(ChangeContent change)
-    |> Then should equal [ ContentUpdated("new title", "new fancy content") ]
 
 module Reviewer =
   [<Fact>]
@@ -83,8 +102,9 @@ module Reviewer =
     Given [ Drafted article ]
     |> When(AssignReviewer copywriter1)
     |> Then should equal
-         [ Assigned copywriter1
-           StateChanged InReview ]
+         (Ok
+           [ Assigned copywriter1
+             StateChanged InReview ])
 
   [<Fact>]
   let ``should not re assign another reviewer`` () =
@@ -93,4 +113,4 @@ module Reviewer =
         Assigned copywriter1
         StateChanged InReview ]
     |> When(AssignReviewer copywriter2)
-    |> Then should equal [ AlreadyAssigned copywriter1 ]
+    |> Then should equal (copywriter1 |> AlreadyAssigned |> Error)

@@ -11,7 +11,7 @@ type Comment =
   | Resolved of string
 
 type AggregateId = Guid
-type EventProducer<'Event> = 'Event list -> 'Event list
+type EventProducer<'Event, 'Error> = 'Event list -> Result<'Event list, 'Error>
 
 type Projection<'State, 'Event> =
   { Zero : 'State

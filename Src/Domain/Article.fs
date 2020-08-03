@@ -36,16 +36,18 @@ type Command =
 // | ResolveComment of CopyWriterId * CommentId
 // | Publish of JournalistId
 
+type ArticleError =
+  | ArticleWasNotPresent
+  | AlreadyDrafted
+  | TriedToChangeContentsOfOthersArticle of ArticleDraft
+  | AlreadyAssigned of CopyWriterId
+  | ArticleInvalidState of ArticleState
 
 type Event =
-  | ArticleWasNotPresent
   | Drafted of ArticleDraft
-  | StateChanged of ArticleState
-  | AlreadyDrafted
   | ContentUpdated of string * string
-  | TriedToChangeContentsOfOthersArticle of ArticleDraft
   | Assigned of CopyWriterId
-  | AlreadyAssigned of CopyWriterId
+  | StateChanged of ArticleState
 // | Commented of CopyWriterId * Comment * CommentId
 // | CommentAlreadyExist of CommentId
 // | CommentResolved of CopyWriterId * CommentId
@@ -69,30 +71,40 @@ let apply (article : Article option) event =
   | _ -> article
 
 let private changeContent (draft : ArticleDraft) article =
-  if article.Title = draft.Title
-     && article.Content = draft.Content then
-    []
-  else if draft.CreatorId <> article.OwnerId then
-    [ TriedToChangeContentsOfOthersArticle draft ]
-  else
-    [ ContentUpdated(draft.Title, draft.Content) ]
+  match article.State with
+  | InDraft
+  | InReview ->
+      if (article.Title, article.Content) = (draft.Title, draft.Content) then
+        [] |> Ok
+      else if draft.CreatorId <> article.OwnerId then
+        draft
+        |> TriedToChangeContentsOfOthersArticle
+        |> Error
+      else
+        [ ContentUpdated(draft.Title, draft.Content) ]
+        |> Ok
+  | state -> state |> ArticleInvalidState |> Error
 
 let private assignReviewer reviewer article =
   match article.State with
-  | InDraft -> [ Assigned reviewer; StateChanged InReview ]
-  | _ -> [ article.Reviewer |> Option.get |> AlreadyAssigned ]
+  | InDraft ->
+      [ Assigned reviewer
+        StateChanged InReview ]
+      |> Ok
+  | _ -> article.Reviewer.Value |> AlreadyAssigned |> Error
 
 let exec cmd article =
   match (cmd, article) with
   | (Draft articleDraft, None) ->
       [ Drafted articleDraft
         StateChanged InDraft ]
-  | (Draft _, Some _) -> [ AlreadyDrafted ]
-  | (ChangeContent draft, Some state) -> state |> changeContent draft
-  | (AssignReviewer reviewer, Some state) -> state |> assignReviewer reviewer
-  | (_, None) -> [ ArticleWasNotPresent ]
+      |> Ok
+  | (Draft _, Some _) -> AlreadyDrafted |> Error
+  | (ChangeContent draft, Some article) -> article |> changeContent draft
+  | (AssignReviewer reviewer, Some article) -> article |> assignReviewer reviewer
+  | (_, None) -> ArticleWasNotPresent |> Error
 
 let articleProjection = { Zero = None ; Fold = apply }
 
-let articleEventProducer cmd : EventProducer<Event> =
+let articleEventProducer cmd : EventProducer<Event, ArticleError> =
   (project articleProjection) >> (exec cmd)
