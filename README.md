@@ -26,6 +26,6 @@ Clone repo and use your favorite editor
 
 ### Pending Items:
 
-- [ ] Replace string to `NonEmpty<String>` type from domain (article, message, commands..etc)
+- [x] Replace string to `NonEmpty<String>` type from domain (article, message, commands..etc)
 - [ ] Integrate with in memory store..
 - [ ] move out Event Producer from Article file.

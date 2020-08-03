@@ -1,4 +1,4 @@
-namespace Domain.Types
+namespace Domain
 
 open System
 

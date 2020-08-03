@@ -1,6 +1,5 @@
 module Infra.EventStore
-
-open Domain.Types
+open Domain
 
 type Msg<'Event> =
   | Get of AsyncReplyChannel<EventResult<'Event>>

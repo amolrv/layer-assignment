@@ -1,6 +1,5 @@
 module Domain.Article.Test
-
-open Domain.Types
+open Domain
 open Domain.Article
 open FsUnit.Xunit
 open Xunit
@@ -131,7 +130,7 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview ]
-    |> When(Comment( nonEmptyStr "Comment#1", commentId1, copywriter1))
+    |> When(Command.Comment( nonEmptyStr "Comment#1", commentId1, copywriter1))
     |> Then should equal (Ok [ Commented( nonEmptyStr "Comment#1", commentId1) ])
 
   [<Fact>]
@@ -144,7 +143,7 @@ module Comments =
         ContentUpdated change
         Commented(nonEmptyStr "Comment#2", commentId2) ]
     |> When(Resolve(commentId1, copywriter1))
-    |> Then should equal (Ok [ Resolved commentId1 ])
+    |> Then should equal (Ok [ Event.Resolved commentId1 ])
 
   [<Fact>]
   let ``should not resolve comment resolved comment again`` () =
@@ -154,7 +153,7 @@ module Comments =
         StateChanged InReview
         Commented(nonEmptyStr "Comment#1", commentId1)
         ContentUpdated change
-        Resolved commentId1 ]
+        Event.Resolved commentId1 ]
     |> When(Resolve(commentId1, copywriter1))
     |> Then should equal (Ok [])
 
@@ -166,7 +165,7 @@ module Comments =
         Assigned copywriter1
         StateChanged InReview
         Commented(nonEmptyStr "Comment#1", commentId) ]
-    |> When(Comment(nonEmptyStr "Comment#1", commentId, copywriter1))
+    |> When(Command.Comment(nonEmptyStr "Comment#1", commentId, copywriter1))
     |> Then should equal (Ok [])
 
   [<Fact>]
@@ -177,7 +176,7 @@ module Comments =
         Assigned copywriter1
         StateChanged InReview
         Commented(nonEmptyStr "Comment#1", commentId) ]
-    |> When(Comment(nonEmptyStr "Comment#2", commentId, copywriter2))
+    |> When(Command.Comment(nonEmptyStr "Comment#2", commentId, copywriter2))
     |> Then should equal (Error(CommentingOnOthersArticle copywriter2))
 
   [<Fact>]
@@ -189,7 +188,7 @@ module Comments =
            [ Drafted(article, journalist)
              Assigned copywriter1
              StateChanged state ]
-         |> When(Comment(nonEmptyStr "Comment#1", commentId, copywriter1))
+         |> When(Command.Comment(nonEmptyStr "Comment#1", commentId, copywriter1))
          |> Then should equal (Error(ArticleInvalidState state)))
 
 module publish =
@@ -202,8 +201,8 @@ module publish =
         StateChanged InReview
         Commented(nonEmptyStr "Comment#1", Comments.commentId1)
         Commented(nonEmptyStr "Comment#2", Comments.commentId2)
-        Resolved Comments.commentId1
-        Resolved Comments.commentId2 ]
+        Event.Resolved Comments.commentId1
+        Event.Resolved Comments.commentId2 ]
     |> When(Publish journalist)
     |> Then should equal (Ok [ StateChanged Published ])
 
@@ -224,8 +223,8 @@ module publish =
         StateChanged InReview
         Commented(nonEmptyStr "Comment#1", Comments.commentId1)
         Commented(nonEmptyStr "Comment#2", Comments.commentId2)
-        Resolved Comments.commentId1
-        Resolved Comments.commentId2 ]
+        Event.Resolved Comments.commentId1
+        Event.Resolved Comments.commentId2 ]
     |> When(Publish anotherJournalist)
     |> Then should equal (Error TriedToPublishArticleOfOther)
 
@@ -237,6 +236,6 @@ module publish =
         StateChanged InReview
         Commented(nonEmptyStr "Comment#1", Comments.commentId1)
         Commented(nonEmptyStr "Comment#2", Comments.commentId2)
-        Resolved Comments.commentId2 ]
+        Event.Resolved Comments.commentId2 ]
     |> When(Publish journalist)
     |> Then should equal (Error AllCommentsAreNotResolvedYet)
