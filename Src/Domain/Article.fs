@@ -1,5 +1,5 @@
 module Domain.Article
-
+open Types
 open Domain.Projection
 
 type ArticleState =
@@ -134,13 +134,13 @@ let resolvedComments article  =
   |> Map.toSeq
   |> Seq.map snd
   |> Seq.sumBy( function | Comment.Resolved _ -> 1 | _ -> 0)
-      
+
 
 
 let publishArticle journalistId article =
   if journalistId <> article.OwnerId
   then  Error (ArticleError.TriedToPublishArticleOfOther)
-  else 
+  else
     match article.Comments.Count with
     | 0 -> Error(ArticleIsNotReviewed)
     | n when n = (resolvedComments article) -> Ok [ StateChanged Published ]
