@@ -7,30 +7,28 @@ type ArticleState =
   | InReview
   | Published
 
-type ArticleDraft =
+type ArticleData =
   { Title : string
     Content : string
-    CreatorId : JournalistId }
+    Topics : string list }
 
 type Article =
-  { Title : string
-    Content : string
+  { Data : ArticleData
     OwnerId : JournalistId
     State : ArticleState
     Reviewer : CopyWriterId option
     Comments : Map<CommentId, Comment> }
 
-let create (draft : ArticleDraft) : Article =
-  { Title = draft.Title
-    Content = draft.Content
-    OwnerId = draft.CreatorId
+let create creatorId (draft : ArticleData) : Article =
+  { Data = draft
+    OwnerId = creatorId
     State = InDraft
     Reviewer = None
     Comments = Map.empty }
 
 type Command =
-  | Draft of ArticleDraft
-  | ChangeContent of ArticleDraft
+  | Draft of ArticleData * JournalistId
+  | ChangeContent of ArticleData * JournalistId
   | AssignReviewer of CopyWriterId
 // | Comment of CopyWriterId * Comment * CommentId
 // | ResolveComment of CopyWriterId * CommentId
@@ -39,50 +37,36 @@ type Command =
 type ArticleError =
   | ArticleWasNotPresent
   | AlreadyDrafted
-  | TriedToChangeContentsOfOthersArticle of ArticleDraft
+  | TriedToChangeContentsOfOthersArticle of ArticleData * JournalistId
   | AlreadyAssigned of CopyWriterId
   | ArticleInvalidState of ArticleState
 
 type Event =
-  | Drafted of ArticleDraft
-  | ContentUpdated of string * string
+  | Drafted of ArticleData * JournalistId
+  | ContentUpdated of ArticleData
   | Assigned of CopyWriterId
   | StateChanged of ArticleState
-// | Commented of CopyWriterId * Comment * CommentId
-// | CommentAlreadyExist of CommentId
-// | CommentResolved of CopyWriterId * CommentId
-// | CommentAlreadyResolved of CommentId
-// | ArticlePublished
-// | ArticleAlreadyPublished
 
 let apply (article : Article option) event =
   match (event, article) with
-  | (Drafted draft, None) -> draft |> create |> Some
-  | (ContentUpdated (title, content), Some article) ->
-      { article with
-          Title = title
-          Content = content }
-      |> Some
-  | (Assigned reviewer, Some article) ->
-      { article with
-          Reviewer = Some reviewer }
-      |> Some
+  | (Drafted (draft, creatorId), None) -> draft |> create creatorId |> Some
+  | (ContentUpdated data, Some article) -> { article with Data = data } |> Some
+  | (Assigned reviewer, Some article) -> { article with Reviewer = Some reviewer } |> Some
   | (StateChanged state, Some article) -> { article with State = state } |> Some
   | _ -> article
 
-let private changeContent (draft : ArticleDraft) article =
+let private changeContent (draft : ArticleData) journalistId article =
   match article.State with
   | InDraft
   | InReview ->
-      if (article.Title, article.Content) = (draft.Title, draft.Content) then
+      if article.Data = draft then
         [] |> Ok
-      else if draft.CreatorId <> article.OwnerId then
-        draft
+      else if journalistId <> article.OwnerId then
+        (draft, journalistId)
         |> TriedToChangeContentsOfOthersArticle
         |> Error
       else
-        [ ContentUpdated(draft.Title, draft.Content) ]
-        |> Ok
+        [ ContentUpdated draft ] |> Ok
   | state -> state |> ArticleInvalidState |> Error
 
 let private assignReviewer reviewer article =
@@ -95,12 +79,12 @@ let private assignReviewer reviewer article =
 
 let exec cmd article =
   match (cmd, article) with
-  | (Draft articleDraft, None) ->
-      [ Drafted articleDraft
+  | (Draft (articleDraft, creatorId), None) ->
+      [ Drafted(articleDraft, creatorId)
         StateChanged InDraft ]
       |> Ok
   | (Draft _, Some _) -> AlreadyDrafted |> Error
-  | (ChangeContent draft, Some article) -> article |> changeContent draft
+  | (ChangeContent (draft, journalistId), Some article) -> article |> changeContent draft journalistId
   | (AssignReviewer reviewer, Some article) -> article |> assignReviewer reviewer
   | (_, None) -> ArticleWasNotPresent |> Error
 
