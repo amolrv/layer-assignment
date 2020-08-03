@@ -22,15 +22,12 @@ let log msg a =
 let article =
   { Title = "Title#1"
     Content = "Some nice content"
-    Topics =
-      [ "corona"
-        "life-style"
-        "employment" ] }
+    Topics = [ "corona"; "life-style"; "employment" ] }
 
 let change =
   { Title = "new title"
     Content = "new fancy content"
-    Topics = [ "corona" ; "life-style" ] }
+    Topics = [ "corona"; "life-style" ] }
 
 let journalist = JournalistId.NewGuid()
 let anotherJournalist = JournalistId.NewGuid()
@@ -81,7 +78,10 @@ module ChangeContent =
         Assigned copywriter1
         StateChanged Published ]
     |> When(ChangeContent(change, journalist))
-    |> Then should equal (Published |> ArticleInvalidState |> Error)
+    |> Then should equal
+         (Published
+          |> ArticleInvalidState
+          |> Error)
 
 
   [<Fact>]
@@ -119,20 +119,47 @@ module Reviewer =
         Assigned copywriter1
         StateChanged InReview ]
     |> When(AssignReviewer copywriter2)
-    |> Then should equal (copywriter1 |> AlreadyAssigned |> Error)
+    |> Then should equal
+         (copywriter1
+          |> AlreadyAssigned
+          |> Error)
 
 module Comments =
-  let commentId = CommentId.NewGuid()
+  let commentId1 = CommentId.NewGuid()
+  let commentId2 = CommentId.NewGuid()
 
   [<Fact>]
   let ``should comment on article when article is inReview state`` () =
-
     Given
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview ]
-    |> When(Comment("Comment#1", commentId, copywriter1))
-    |> Then should equal (Ok [ Commented("Comment#1", commentId) ])
+    |> When(Comment("Comment#1", commentId1, copywriter1))
+    |> Then should equal (Ok [ Commented("Comment#1", commentId1) ])
+
+  [<Fact>]
+  let ``should resolve comment`` () =
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview
+        Commented("Comment#1", commentId1)
+        ContentUpdated change
+        Commented("Comment#2", commentId2) ]
+    |> When(Resolve(commentId1, copywriter1))
+    |> Then should equal (Ok [ Resolved commentId1 ])
+
+  [<Fact>]
+  let ``should not resolve comment resolved comment again`` () =
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview
+        Commented("Comment#1", commentId1)
+        ContentUpdated change
+        Resolved commentId1 ]
+    |> When(Resolve(commentId1, copywriter1))
+    |> Then should equal (Ok [])
 
   [<Fact>]
   let ``should not add same comment twice`` () =
@@ -159,7 +186,7 @@ module Comments =
   [<Fact>]
   let ``should not add comment on article when article is inDraft/Published state`` () =
     let commentId = CommentId.NewGuid()
-    [ InDraft ; Published ]
+    [ InDraft; Published ]
     |> List.iter (fun state ->
          Given
            [ Drafted(article, journalist)

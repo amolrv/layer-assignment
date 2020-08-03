@@ -31,7 +31,7 @@ type Command =
   | ChangeContent of ArticleData * JournalistId
   | AssignReviewer of CopyWriterId
   | Comment of string * CommentId * CopyWriterId
-// | ResolveComment of CopyWriterId * CommentId
+  | Resolve of CommentId * CopyWriterId
 // | Publish of JournalistId
 
 type ArticleError =
@@ -41,6 +41,7 @@ type ArticleError =
   | AlreadyAssigned of CopyWriterId
   | CommentingOnOthersArticle of CopyWriterId
   | ArticleInvalidState of ArticleState
+  | CommentNotFound of CommentId
 
 type Event =
   | Drafted of ArticleData * JournalistId
@@ -48,6 +49,7 @@ type Event =
   | Assigned of CopyWriterId
   | StateChanged of ArticleState
   | Commented of string * CommentId
+  | Resolved of CommentId
 
 let apply (article : Article option) event =
   match (event, article) with
@@ -60,11 +62,16 @@ let apply (article : Article option) event =
   | (StateChanged state, Some article) -> { article with State = state } |> Some
   | (Commented (content, commentId), Some article) ->
       let comment = Comment.Comment content
-
       let newComments =
         article.Comments |> Map.add commentId comment
-
       { article with Comments = newComments } |> Some
+  | (Resolved commentId, Some article) ->
+    let comment = article.Comments |> Map.find commentId
+    let newState = match comment with
+                   | Comment.Comment c -> Comment.Resolved c
+                   |_ -> comment
+    let newComments = article.Comments |> Map.add commentId newState
+    { article with Comments = newComments } |> Some
   | _ -> article
 
 let private changeContent (draft : ArticleData) journalistId article =
@@ -97,6 +104,17 @@ let private addComment (comment, id, reviewer) article =
   | InReview when article.Reviewer.Value <> reviewer -> Error(CommentingOnOthersArticle reviewer)
   | state -> Error(ArticleInvalidState state)
 
+let resolveComment (commentId,reviewer) article =
+  let toEvents = function
+  | Comment.Comment _ -> [Resolved commentId]
+  | Comment.Resolved _ -> []
+
+  commentId
+  |> article.Comments.TryFind
+  |> Option.map (toEvents >> Ok)
+  |> Option.defaultValue (Error (CommentNotFound commentId))
+
+
 let exec cmd article =
   match (cmd, article) with
   | (Draft (articleDraft, creatorId), None) ->
@@ -107,6 +125,7 @@ let exec cmd article =
   | (ChangeContent (draft, journalistId), Some article) -> article |> changeContent draft journalistId
   | (AssignReviewer reviewer, Some article) -> article |> assignReviewer reviewer
   | (Comment (comment, id, reviewer), Some article) -> article |> addComment (comment, id, reviewer)
+  | (Resolve (commentId,reviewer), Some article) -> article |> resolveComment (commentId,reviewer)
   | (_, None) -> ArticleWasNotPresent |> Error
 
 let articleProjection = { Zero = None ; Fold = apply }
