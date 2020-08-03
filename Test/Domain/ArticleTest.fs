@@ -15,10 +15,6 @@ let equal expected actual =
   let str = sprintf "%A"
   Assert.Equal(str expected, str actual)
 
-let log msg a =
-  printfn "%s: %A" msg a
-  a
-
 let article =
   { Title = "Title#1"
     Content = "Some nice content"
@@ -194,3 +190,52 @@ module Comments =
              StateChanged state ]
          |> When(Comment("Comment#1", commentId, copywriter1))
          |> Then should equal (Error(ArticleInvalidState state)))
+
+module publish =
+  
+  [<Fact>]
+  let ``should able to publish article only when all the comments are resolved`` () =
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview
+        Commented("Comment#1", Comments.commentId1)
+        Commented("Comment#2", Comments.commentId2)
+        Resolved Comments.commentId1
+        Resolved Comments.commentId2 ]
+    |> When(Publish journalist)
+    |> Then should equal (Ok [ StateChanged Published ])
+
+  [<Fact>]
+  let ``should not publish article when there are no comments`` () =
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview ]
+    |> When(Publish journalist)
+    |> Then should equal (Error ArticleIsNotReviewed)
+    
+  [<Fact>]
+  let ``should not publish article of someone else`` () =
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview
+        Commented("Comment#1", Comments.commentId1)
+        Commented("Comment#2", Comments.commentId2)
+        Resolved Comments.commentId1
+        Resolved Comments.commentId2 ]
+    |> When(Publish anotherJournalist)
+    |> Then should equal (Error TriedToPublishArticleOfOther)
+  
+  [<Fact>]
+  let ``should not publish article of some comments are yet to resolved`` () =
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview
+        Commented("Comment#1", Comments.commentId1)
+        Commented("Comment#2", Comments.commentId2)
+        Resolved Comments.commentId2 ]
+    |> When(Publish journalist)
+    |> Then should equal (Error AllCommentsAreNotResolvedYet)  
