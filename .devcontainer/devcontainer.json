@@ -27,7 +27,9 @@
 	"extensions": [
 		"Ionide.Ionide-fsharp",
 		"ms-dotnettools.csharp",
-		"formulahendry.dotnet-test-explorer"
+		"formulahendry.dotnet-test-explorer",
+		"streetsidesoftware.code-spell-checker",
+		"vscode-icons-team.vscode-icons"
 	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

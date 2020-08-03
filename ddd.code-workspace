@@ -4,7 +4,21 @@
 			"path": "."
 		}
 	],
+	"extensions": {
+		"recommendations": [
+			"ms-vscode-remote.remote-containers",
+			"vscode-icons-team.vscode-icons"
+		]
+	},
 	"settings": {
-		"FSharp.fsacRuntime": "net"
+		"cSpell.words": [
+			"Ionide",
+			"dotnettools",
+			"formulahendry",
+			"fsac",
+			"hbenl",
+			"netcore",
+			"streetsidesoftware"
+		]
 	}
 }
