@@ -1,11 +1,12 @@
-module Domain.Article.Test
-open Domain
-open Domain.Article
+module Src.Aggregate.EventProducer.Test
+
 open FsUnit.Xunit
+open Src.Aggregate.Article
+open Src.Domain
 open Xunit
 
 let Given = id
-let When = articleEventProducer
+let When = EventProducer.articleEventProducer
 let Then expectation actual = actual |> expectation
 
 let empty a = Empty.Matches(a) |> should be True
@@ -21,15 +22,12 @@ let nonEmptyStrList = List.map nonEmptyStr
 let article =
   { Title = nonEmptyStr "Title#1"
     Content = nonEmptyStr "Some nice content"
-    Topics = nonEmptyStrList
-      [ "corona"
-        "life-style"
-        "employment" ] }
+    Topics = nonEmptyStrList [ "corona"; "life-style"; "employment" ] }
 
 let change =
   { Title = nonEmptyStr "new title"
     Content = nonEmptyStr "new fancy content"
-    Topics = nonEmptyStrList [ "corona" ; "life-style" ] }
+    Topics = nonEmptyStrList [ "corona"; "life-style" ] }
 
 let journalist = JournalistId.NewGuid()
 let anotherJournalist = JournalistId.NewGuid()
@@ -80,12 +78,14 @@ module ChangeContent =
         Assigned copywriter1
         StateChanged Published ]
     |> When(ChangeContent(change, journalist))
-    |> Then should equal (Published |> ArticleInvalidState |> Error)
+    |> Then should equal
+         (Published
+          |> ArticleInvalidState
+          |> Error)
 
 
   [<Fact>]
   let ``should not change content of an article from another journalist`` () =
-
     Given [ Drafted(article, journalist) ]
     |> When(ChangeContent(change, anotherJournalist))
     |> Then should equal
@@ -118,7 +118,10 @@ module Reviewer =
         Assigned copywriter1
         StateChanged InReview ]
     |> When(AssignReviewer copywriter2)
-    |> Then should equal (copywriter1 |> AlreadyAssigned |> Error)
+    |> Then should equal
+         (copywriter1
+          |> AlreadyAssigned
+          |> Error)
 
 module Comments =
   let commentId1 = CommentId.NewGuid()
@@ -130,8 +133,8 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview ]
-    |> When(Command.Comment( nonEmptyStr "Comment#1", commentId1, copywriter1))
-    |> Then should equal (Ok [ Commented( nonEmptyStr "Comment#1", commentId1) ])
+    |> When(Command.Comment(nonEmptyStr "Comment#1", commentId1, copywriter1))
+    |> Then should equal (Ok [ Commented(nonEmptyStr "Comment#1", commentId1) ])
 
   [<Fact>]
   let ``should resolve comment`` () =
@@ -139,7 +142,7 @@ module Comments =
       [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview
-        Commented( nonEmptyStr "Comment#1", commentId1)
+        Commented(nonEmptyStr "Comment#1", commentId1)
         ContentUpdated change
         Commented(nonEmptyStr "Comment#2", commentId2) ]
     |> When(Resolve(commentId1, copywriter1))
@@ -182,7 +185,7 @@ module Comments =
   [<Fact>]
   let ``should not add comment on article when article is inDraft/Published state`` () =
     let commentId = CommentId.NewGuid()
-    [ InDraft ; Published ]
+    [ InDraft; Published ]
     |> List.iter (fun state ->
          Given
            [ Drafted(article, journalist)
@@ -192,7 +195,6 @@ module Comments =
          |> Then should equal (Error(ArticleInvalidState state)))
 
 module publish =
-
   [<Fact>]
   let ``should able to publish article only when all the comments are resolved`` () =
     Given

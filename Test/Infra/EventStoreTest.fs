@@ -1,9 +1,8 @@
-module Infra.``Event store should``
+module Src.Infra.``Event store should``
 
-open Domain
-open Xunit
 open FsUnit.Xunit
-open Infra
+open Src.Domain
+open Xunit
 
 let envelope aggregateId event =
   { MetaData =
@@ -44,10 +43,7 @@ let ``get events by aggregateId`` () =
       |> List.map (envelope aggregateId1)
 
     let! _ = store.Append events
-    let! _ =
-      [ ArticleCreated("Article#2", "some content")
-        |> envelope aggregateId2 ]
-      |> store.Append
+    let! _ = [ ArticleCreated("Article#2", "some content") |> envelope aggregateId2 ] |> store.Append
     let expected : EventResult<DummyEvent> = events |> Ok
     let! result = store.GetStream aggregateId1
     result |> should equal expected
@@ -66,8 +62,7 @@ let ``get all events`` () =
       |> List.map (envelope aggregateId1)
 
     let events2 =
-      [ ArticleCreated("Article#2", "some content")
-        |> envelope aggregateId2 ]
+      [ ArticleCreated("Article#2", "some content") |> envelope aggregateId2 ]
 
     let! _ = events1 |> store.Append
     let! _ = events2 |> store.Append

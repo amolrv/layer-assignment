@@ -4,10 +4,13 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="./Domain/WrappedString.fs" />
-    <Compile Include="./Domain/Types.fs" />
-    <Compile Include="./Domain/Article.fs" />
-    <Compile Include="./Infra/EventStore.fs" />
+    <Compile Include="Domain\WrappedString.fs" />
+    <Compile Include="Domain\Types.fs" />
+    <Compile Include="Aggregate\Article\Article.fs" />
+    <Compile Include="Aggregate\Article\Projection.fs" />
+    <Compile Include="Aggregate\Article\CommandHandler.fs" />
+    <Compile Include="Aggregate\Article\EventProducer.fs" />
+    <Compile Include="Infra\EventStore.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

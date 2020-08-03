@@ -1,9 +1,11 @@
-namespace Domain
+namespace Src.Domain
 
 open System
 
 type CommentId = Guid
+
 type CopyWriterId = Guid
+
 type JournalistId = Guid
 
 type Comment =
@@ -11,6 +13,7 @@ type Comment =
   | Resolved of NonEmptyString
 
 type AggregateId = Guid
+
 type EventProducer<'Event, 'Error> = 'Event list -> Result<'Event list, 'Error>
 
 type Projection<'State, 'Event> =
@@ -31,7 +34,3 @@ type EventStore<'Event> =
   { Get : unit -> Async<EventResult<'Event>>
     GetStream : AggregateId -> Async<EventResult<'Event>>
     Append : EventEnvelope<'Event> list -> Async<Result<Unit, string>> }
-
-module Projection =
-  let project projection =
-    List.fold projection.Fold projection.Zero

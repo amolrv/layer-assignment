@@ -24,8 +24,7 @@ Clone repo and use your favorite editor
 - [X] As a copywriter, I resolve suggestions that the journalist applied
 - [X] As a journalist, I can publish the article after all suggestions are resolved
 
-### Pending Items:
-
+### Items to finish:
 - [x] Replace string to `NonEmpty<String>` type from domain (article, message, commands..etc)
+- [x] move out Event Producer from Article file.
 - [ ] Integrate with in memory store..
-- [ ] move out Event Producer from Article file.

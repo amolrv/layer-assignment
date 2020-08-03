@@ -1,5 +1,6 @@
-module Infra.EventStore
-open Domain
+module Src.Infra.EventStore
+
+open Src.Domain
 
 type Msg<'Event> =
   | Get of AsyncReplyChannel<EventResult<'Event>>
@@ -7,8 +8,7 @@ type Msg<'Event> =
   | Append of EventEnvelope<'Event> list * AsyncReplyChannel<Result<unit, string>>
 
 let streamOf aggregateId events =
-  events
-  |> List.filter (fun ee -> ee.MetaData.AggregateId = aggregateId)
+  events |> List.filter (fun ee -> ee.MetaData.AggregateId = aggregateId)
 
 let init () : EventStore<'Event> =
   let handle (inbox : MailboxProcessor<Msg<'Event>>) =
@@ -25,7 +25,9 @@ let init () : EventStore<'Event> =
             |> replyChannel.Reply
             return! loop history
         | Append (events, replyChannel) ->
-            () |> Ok |> replyChannel.Reply
+            ()
+            |> Ok
+            |> replyChannel.Reply
             let newHistory = history @ events
             return! loop newHistory
       }
