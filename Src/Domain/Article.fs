@@ -30,7 +30,7 @@ type Command =
   | Draft of ArticleData * JournalistId
   | ChangeContent of ArticleData * JournalistId
   | AssignReviewer of CopyWriterId
-// | Comment of CopyWriterId * Comment * CommentId
+  | Comment of string * CommentId * CopyWriterId
 // | ResolveComment of CopyWriterId * CommentId
 // | Publish of JournalistId
 
@@ -39,6 +39,7 @@ type ArticleError =
   | AlreadyDrafted
   | TriedToChangeContentsOfOthersArticle of ArticleData * JournalistId
   | AlreadyAssigned of CopyWriterId
+  | CommentingOnOthersArticle of CopyWriterId
   | ArticleInvalidState of ArticleState
 
 type Event =
@@ -46,13 +47,24 @@ type Event =
   | ContentUpdated of ArticleData
   | Assigned of CopyWriterId
   | StateChanged of ArticleState
+  | Commented of string * CommentId
 
 let apply (article : Article option) event =
   match (event, article) with
   | (Drafted (draft, creatorId), None) -> draft |> create creatorId |> Some
   | (ContentUpdated data, Some article) -> { article with Data = data } |> Some
-  | (Assigned reviewer, Some article) -> { article with Reviewer = Some reviewer } |> Some
+  | (Assigned reviewer, Some article) ->
+      { article with
+          Reviewer = Some reviewer }
+      |> Some
   | (StateChanged state, Some article) -> { article with State = state } |> Some
+  | (Commented (content, commentId), Some article) ->
+      let comment = Comment.Comment content
+
+      let newComments =
+        article.Comments |> Map.add commentId comment
+
+      { article with Comments = newComments } |> Some
   | _ -> article
 
 let private changeContent (draft : ArticleData) journalistId article =
@@ -77,6 +89,14 @@ let private assignReviewer reviewer article =
       |> Ok
   | _ -> article.Reviewer.Value |> AlreadyAssigned |> Error
 
+let private addComment (comment, id, reviewer) article =
+  match article.State with
+  | InReview when article.Reviewer.Value = reviewer ->
+      let existingComment = (article.Comments.TryFind id)
+      Ok(if existingComment.IsSome then [] else [ Commented(comment, id) ])
+  | InReview when article.Reviewer.Value <> reviewer -> Error(CommentingOnOthersArticle reviewer)
+  | state -> Error(ArticleInvalidState state)
+
 let exec cmd article =
   match (cmd, article) with
   | (Draft (articleDraft, creatorId), None) ->
@@ -86,6 +106,7 @@ let exec cmd article =
   | (Draft _, Some _) -> AlreadyDrafted |> Error
   | (ChangeContent (draft, journalistId), Some article) -> article |> changeContent draft journalistId
   | (AssignReviewer reviewer, Some article) -> article |> assignReviewer reviewer
+  | (Comment (comment, id, reviewer), Some article) -> article |> addComment (comment, id, reviewer)
   | (_, None) -> ArticleWasNotPresent |> Error
 
 let articleProjection = { Zero = None ; Fold = apply }

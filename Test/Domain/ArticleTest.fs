@@ -11,8 +11,13 @@ let Then expectation actual = actual |> expectation
 let empty a = Empty.Matches(a) |> should be True
 let should = id
 
-let equal expected (actual : Result<'a, 'e>) =
-  Assert.Equal<Result<'a, 'e>>(expected, actual)
+let equal expected actual =
+  let str = sprintf "%A"
+  Assert.Equal(str expected, str actual)
+
+let log msg a =
+  printfn "%s: %A" msg a
+  a
 
 let article =
   { Title = "Title#1"
@@ -56,13 +61,13 @@ module ChangeContent =
     |> Then should equal (ArticleWasNotPresent |> Error)
 
   [<Fact>]
-  let ``should update content when article is inDraft state`` () =
+  let ``should change content when article is inDraft state`` () =
     Given [ Drafted(article, journalist) ]
     |> When(ChangeContent(change, journalist))
     |> Then should equal (Ok [ ContentUpdated change ])
 
   [<Fact>]
-  let ``should update content when article is in Review state`` () =
+  let ``should change content when article is in Review state`` () =
     Given
       [ Drafted(article, journalist)
         Assigned copywriter1 ]
@@ -90,18 +95,17 @@ module ChangeContent =
           |> Error)
 
   [<Fact>]
-  let ``should not update content when content are exactly same`` () =
+  let ``should not change content when content are exactly same`` () =
     Given
-      [ Drafted (article,journalist)
-        ContentUpdated (change) ]
-    |> When(ChangeContent (change,journalist))
+      [ Drafted(article, journalist)
+        ContentUpdated(change) ]
+    |> When(ChangeContent(change, journalist))
     |> Then should equal (Ok [])
-
 
 module Reviewer =
   [<Fact>]
   let ``should assign reviewer to article`` () =
-    Given [ Drafted (article,journalist) ]
+    Given [ Drafted(article, journalist) ]
     |> When(AssignReviewer copywriter1)
     |> Then should equal
          (Ok
@@ -111,8 +115,55 @@ module Reviewer =
   [<Fact>]
   let ``should not re assign another reviewer`` () =
     Given
-      [ Drafted (article,journalist)
+      [ Drafted(article, journalist)
         Assigned copywriter1
         StateChanged InReview ]
     |> When(AssignReviewer copywriter2)
     |> Then should equal (copywriter1 |> AlreadyAssigned |> Error)
+
+module Comments =
+  let commentId = CommentId.NewGuid()
+
+  [<Fact>]
+  let ``should comment on article when article is inReview state`` () =
+
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview ]
+    |> When(Comment("Comment#1", commentId, copywriter1))
+    |> Then should equal (Ok [ Commented("Comment#1", commentId) ])
+
+  [<Fact>]
+  let ``should not add same comment twice`` () =
+    let commentId = CommentId.NewGuid()
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview
+        Commented("Comment#1", commentId) ]
+    |> When(Comment("Comment#1", commentId, copywriter1))
+    |> Then should equal (Ok [])
+
+  [<Fact>]
+  let ``should not comment on others article`` () =
+    let commentId = CommentId.NewGuid()
+    Given
+      [ Drafted(article, journalist)
+        Assigned copywriter1
+        StateChanged InReview
+        Commented("Comment#1", commentId) ]
+    |> When(Comment("Comment#2", commentId, copywriter2))
+    |> Then should equal (Error(CommentingOnOthersArticle copywriter2))
+
+  [<Fact>]
+  let ``should not add comment on article when article is inDraft/Published state`` () =
+    let commentId = CommentId.NewGuid()
+    [ InDraft ; Published ]
+    |> List.iter (fun state ->
+         Given
+           [ Drafted(article, journalist)
+             Assigned copywriter1
+             StateChanged state ]
+         |> When(Comment("Comment#1", commentId, copywriter1))
+         |> Then should equal (Error(ArticleInvalidState state)))
